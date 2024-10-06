@@ -6,10 +6,10 @@ using namespace std;
 
 #define PI 3.1415
 
-// Параметры анимации
+//Параметры анимации
 float animationStart[3]; //Начальная позиция
-float animationEnd[3];   //Конечная позиция
-float animationProgress;  //Текущий прогресс (0.0 до 1.0)
+float animationEnd[3]; //Конечная позиция
+float animationProgress; //Текущий прогресс (0.0 до 1.0)
 bool isAnimating = false; //Статус анимации
 float animationDuration = 2.0; //Длительность анимации в секундах
 int frameRate = 60; //Частота кадров
@@ -39,18 +39,27 @@ float initialMatrix[4][4] = {
     {0, 0, 0, 1}
 };
 
-//Координаты вершин куба
-float cube[8][4] = {
+//Буква "С"
+float Cshape[16][4] = { 
+    //Задняя стенка
     {0, 0, 0, 1},
-    {1, 0, 0, 1},
-    {1, 1, 0, 1},
-    {0, 1, 0, 1},
+    {2, 0, 0, 1},
+    {2, 0.5, 0, 1},
+    {0.5, 0.5, 0, 1},
+    {0.5, 2.5, 0, 1},
+    {2, 2.5, 0, 1},
+    {2, 3, 0, 1},
+    {0, 3, 0, 1},
+    //Передняя стенка
     {0, 0, 1, 1},
-    {1, 0, 1, 1},
-    {1, 1, 1, 1},
-    {0, 1, 1, 1}
+    {2, 0, 1, 1},
+    {2, 0.5, 1, 1},
+    {0.5, 0.5, 1, 1},
+    {0.5, 2.5, 1, 1},
+    {2, 2.5, 1, 1},
+    {2, 3, 1, 1},
+    {0, 3, 1, 1}
 };
-
 
 void multiplyMatrix(float a[4][4], float b[4][4], float result[4][4]) { //Функция для умножения матриц
     for (int i = 0; i < 4; ++i) {
@@ -63,7 +72,6 @@ void multiplyMatrix(float a[4][4], float b[4][4], float result[4][4]) { //Функци
     }
 }
 
-
 void multiplyVector(float vec[4], float mat[4][4], float result[4]) { //Функция для умножения вектора на матрицу
     for (int i = 0; i < 4; ++i) {
         result[i] = 0;
@@ -72,7 +80,6 @@ void multiplyVector(float vec[4], float mat[4][4], float result[4]) { //Функция 
         }
     }
 }
-
 
 void printInstructions() { //Функция для вывода подсказок в консоль
     cout << "Управление:" << endl;
@@ -94,7 +101,7 @@ void printInstructions() { //Функция для вывода подсказок в консоль
     cout << "  1 - Отражение относительно плоскости XY" << endl;
     cout << "  2 - Отражение относительно плоскости YZ" << endl;
     cout << "  3 - Отражение относительно плоскости XZ" << endl;
-    cout << "Анимация:" << endl;
+    cout << "1.Перемещение (анимированное) вдоль произвольной прямой" << endl << "на заданное расстояние с замедлением перед остановкой : " << endl;
     cout << "  m - Анимация перемещения" << endl;
     cout << "Сброс состояния:" << endl;
     cout << "  r - Сброс куба в начальное положение" << endl;
@@ -122,35 +129,37 @@ void drawAxes() { //Отрисовка координатных осей
     glEnd();
 }
 
-// Отрисовка куба
-void drawCube() {
+void drawCShape() { //Отрисовка буквы "С"
     glColor3f(0, 0, 0);
 
-    glBegin(GL_LINE_LOOP); //Передняя грань
-    for (int i = 0; i < 4; ++i) {
+    // Задняя стенка
+    glBegin(GL_LINE_LOOP);
+    for (int i = 0; i < 8; ++i) {
         float transformed[4], projected[4];
-        multiplyVector(cube[i], transformMatrix, transformed);
+        multiplyVector(Cshape[i], transformMatrix, transformed);
         multiplyVector(transformed, projMatrix, projected);
         glVertex3f(projected[0], projected[1], projected[2]);
     }
     glEnd();
-        
-    glBegin(GL_LINE_LOOP); //Задняя грань
-    for (int i = 4; i < 8; ++i) {
+
+    // Передняя стенка
+    glBegin(GL_LINE_LOOP);
+    for (int i = 8; i < 16; ++i) {
         float transformed[4], projected[4];
-        multiplyVector(cube[i], transformMatrix, transformed);
+        multiplyVector(Cshape[i], transformMatrix, transformed);
         multiplyVector(transformed, projMatrix, projected);
         glVertex3f(projected[0], projected[1], projected[2]);
     }
     glEnd();
-        
-    glBegin(GL_LINES); //Соединение передней и задней грани
-    for (int i = 0; i < 4; ++i) {
+
+    // Соединение задней и передней стенки
+    glBegin(GL_LINES);
+    for (int i = 0; i < 8; ++i) {
         float transformed1[4], projected1[4];
         float transformed2[4], projected2[4];
-        multiplyVector(cube[i], transformMatrix, transformed1);
+        multiplyVector(Cshape[i], transformMatrix, transformed1);
         multiplyVector(transformed1, projMatrix, projected1);
-        multiplyVector(cube[i + 4], transformMatrix, transformed2);
+        multiplyVector(Cshape[i + 8], transformMatrix, transformed2);
         multiplyVector(transformed2, projMatrix, projected2);
         glVertex3f(projected1[0], projected1[1], projected1[2]);
         glVertex3f(projected2[0], projected2[1], projected2[2]);
@@ -162,7 +171,7 @@ void display() { //Отрисовка сцены
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
     drawAxes();
-    drawCube();
+    drawCShape();
     glutSwapBuffers();
 }
 
@@ -278,10 +287,8 @@ void resetState() { //Сброс состояния
     glutPostRedisplay();
 }
 
-// Функция для анимации
-void animate(int value) {
+void animate(int value) { //Функция для анимации
     if (isAnimating) {
-        //Увеличиваем прогресс анимации
         animationProgress += step;
         if (animationProgress >= 1.0) {
             animationProgress = 1.0;
@@ -295,17 +302,14 @@ void animate(int value) {
             float currentY = animationStart[1] + (animationEnd[1] - animationStart[1]) * easingProgress;
             float currentZ = animationStart[2] + (animationEnd[2] - animationStart[2]) * easingProgress;
 
-            //Обновление матрицы преобразования
             transformMatrix[3][0] = currentX;
             transformMatrix[3][1] = currentY;
             transformMatrix[3][2] = currentZ;
         }
         glutPostRedisplay();
     }
-    glutTimerFunc(1000 / frameRate, animate, 0); //Устанавливаем таймер для следующего кадра анимации
+    glutTimerFunc(1000 / frameRate, animate, 0); //Таймер для следующего кадра анимации
 }
-
-
 
 void keyboard(unsigned char key, int x, int y) { //Обработка клавиш
     switch (key) {
