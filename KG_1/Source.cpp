@@ -6,6 +6,15 @@ using namespace std;
 
 #define PI 3.1415
 
+// Параметры анимации
+float animationStart[3]; //Начальная позиция
+float animationEnd[3];   //Конечная позиция
+float animationProgress;  //Текущий прогресс (0.0 до 1.0)
+bool isAnimating = false; //Статус анимации
+float animationDuration = 2.0; //Длительность анимации в секундах
+int frameRate = 60; //Частота кадров
+float step; //Шаг для анимации
+
 //Матрица проецирования (Кабинетное проецирование)
 float projMatrix[4][4] = {
     {1, 0, 0, 0},
@@ -33,13 +42,13 @@ float initialMatrix[4][4] = {
 //Координаты вершин куба
 float cube[8][4] = {
     {0, 0, 0, 1},
-    {0.20, 0, 0, 1},
-    {0.20, 0.20, 0, 1},
-    {0, 0.20, 0, 1},
-    {0, 0, 0.20, 1},
-    {0.20, 0, 0.20, 1},
-    {0.20, 0.20, 0.20, 1},
-    {0, 0.20, 0.20, 1}
+    {1, 0, 0, 1},
+    {1, 1, 0, 1},
+    {0, 1, 0, 1},
+    {0, 0, 1, 1},
+    {1, 0, 1, 1},
+    {1, 1, 1, 1},
+    {0, 1, 1, 1}
 };
 
 
@@ -85,6 +94,8 @@ void printInstructions() { //Функция для вывода подсказок в консоль
     cout << "  1 - Отражение относительно плоскости XY" << endl;
     cout << "  2 - Отражение относительно плоскости YZ" << endl;
     cout << "  3 - Отражение относительно плоскости XZ" << endl;
+    cout << "Анимация:" << endl;
+    cout << "  m - Анимация перемещения" << endl;
     cout << "Сброс состояния:" << endl;
     cout << "  r - Сброс куба в начальное положение" << endl;
     cout << "Нажмите ESC для выхода." << endl;
@@ -96,17 +107,17 @@ void drawAxes() { //Отрисовка координатных осей
     //Ось X (красная)
     glColor3f(1, 0, 0);
     glVertex3f(0, 0, 0);
-    glVertex3f(2, 0, 0);
+    glVertex3f(10, 0, 0);
 
     //Ось Y (зелёная)
     glColor3f(0, 1, 0);
     glVertex3f(0, 0, 0);
-    glVertex3f(0, 2, 0);
+    glVertex3f(0, 10, 0);
 
     //Ось Z (синяя)
     glColor3f(0, 0, 1);
     glVertex3f(0, 0, 0);
-    glVertex3f((-cos(45)), (-sin(45)), 1);
+    glVertex3f((-cos(45))*10, (-sin(45)) * 10, 10);
 
     glEnd();
 }
@@ -262,22 +273,48 @@ void mirrorXZ() { //Отражение относительно плоскости XZ
     glutPostRedisplay();
 }
 
-
 void resetState() { //Сброс состояния
     memcpy(transformMatrix, initialMatrix, sizeof(initialMatrix));
     glutPostRedisplay();
+}
+
+// Функция для анимации
+void animate(int value) {
+    if (isAnimating) {
+        //Увеличиваем прогресс анимации
+        animationProgress += step;
+        if (animationProgress >= 1.0) {
+            animationProgress = 1.0;
+            isAnimating = false;
+        }
+        else {
+            //Замедление анимации
+            float easingProgress = animationProgress * animationProgress * (3 - 2 * animationProgress);
+
+            float currentX = animationStart[0] + (animationEnd[0] - animationStart[0]) * easingProgress;
+            float currentY = animationStart[1] + (animationEnd[1] - animationStart[1]) * easingProgress;
+            float currentZ = animationStart[2] + (animationEnd[2] - animationStart[2]) * easingProgress;
+
+            //Обновление матрицы преобразования
+            transformMatrix[3][0] = currentX;
+            transformMatrix[3][1] = currentY;
+            transformMatrix[3][2] = currentZ;
+        }
+        glutPostRedisplay();
+    }
+    glutTimerFunc(1000 / frameRate, animate, 0); //Устанавливаем таймер для следующего кадра анимации
 }
 
 
 
 void keyboard(unsigned char key, int x, int y) { //Обработка клавиш
     switch (key) {
-    case 'w': translate(0, 0.05, 0); break;
-    case 's': translate(0, -0.05, 0); break;
-    case 'a': translate(-0.05, 0, 0); break;
-    case 'd': translate(0.05, 0, 0); break;
-    case 'q': translate(0, 0, 0.05); break;
-    case 'e': translate(0, 0, -0.05); break;
+    case 'w': translate(0, 0.25, 0); break;
+    case 's': translate(0, -0.25, 0); break;
+    case 'a': translate(-0.25, 0, 0); break;
+    case 'd': translate(0.25, 0, 0); break;
+    case 'q': translate(0, 0, 0.25); break;
+    case 'e': translate(0, 0, -0.25); break;
     case 'i': rotateX(10); break;
     case 'k': rotateX(-10); break;
     case 'j': rotateY(10); break;
@@ -290,6 +327,19 @@ void keyboard(unsigned char key, int x, int y) { //Обработка клавиш
     case '2': mirrorYZ(); break;
     case '3': mirrorXZ(); break;
     case 'r': resetState(); break;
+    case 'm': {
+        resetState();
+        animationStart[0] = transformMatrix[3][0];
+        animationStart[1] = transformMatrix[3][1];
+        animationStart[2] = transformMatrix[3][2];
+        animationEnd[0] = 6.0; //Конечная позиция по X
+        animationEnd[1] = 6.0; //Конечная позиция по Y
+        animationEnd[2] = 6.0; //Конечная позиция по Z
+        animationProgress = 0.0;
+        step = 1.0 / (frameRate * animationDuration); //Шаг анимации
+        isAnimating = true;
+        break;
+    }
     case 27: exit(0);
     }
 }
@@ -297,7 +347,12 @@ void keyboard(unsigned char key, int x, int y) { //Обработка клавиш
 void init() { //Инициализация OpenGL
     glClearColor(1.0, 1.0, 1.0, 1.0);
     glEnable(GL_DEPTH_TEST);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(-10, 10, -10, 10, -10, 10);
+    glMatrixMode(GL_MODELVIEW);
     printInstructions();
+
 }
 
 int main(int argc, char** argv) {
@@ -313,6 +368,7 @@ int main(int argc, char** argv) {
 
     glutDisplayFunc(display);
     glutKeyboardFunc(keyboard);
+    glutTimerFunc(0, animate, 0);
     glutMainLoop();
     return 0;
 }
