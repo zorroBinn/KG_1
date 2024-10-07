@@ -15,6 +15,11 @@ float animationDuration = 2.0; //Длительность анимации в секундах
 int frameRate = 60; //Частота кадров
 float step; //Шаг для анимации
 
+//Переменные для пользовательского ввода
+float pointA[3]; //Начальная точка прямой
+float pointB[3]; //Конечная точка прямой
+float moveDistance; //Расстояние перемещения
+
 //Матрица проецирования (Кабинетное проецирование)
 float projMatrix[4][4] = {
     {1, 0, 0, 0},
@@ -104,8 +109,8 @@ void printInstructions() { //Функция для вывода подсказок в консоль
     cout << "1.Перемещение (анимированное) вдоль произвольной прямой" << endl << "на заданное расстояние с замедлением перед остановкой : " << endl;
     cout << "  m - Анимация перемещения" << endl;
     cout << "Сброс состояния:" << endl;
-    cout << "  r - Сброс куба в начальное положение" << endl;
-    cout << "Нажмите ESC для выхода." << endl;
+    cout << "  r - Сброс в начальное положение" << endl;
+    cout << "ESC для выхода." << endl;
 }
 
 void drawAxes() { //Отрисовка координатных осей
@@ -132,7 +137,7 @@ void drawAxes() { //Отрисовка координатных осей
 void drawCShape() { //Отрисовка буквы "С"
     glColor3f(0, 0, 0);
 
-    // Задняя стенка
+    //Задняя стенка
     glBegin(GL_LINE_LOOP);
     for (int i = 0; i < 8; ++i) {
         float transformed[4], projected[4];
@@ -142,7 +147,7 @@ void drawCShape() { //Отрисовка буквы "С"
     }
     glEnd();
 
-    // Передняя стенка
+    //Передняя стенка
     glBegin(GL_LINE_LOOP);
     for (int i = 8; i < 16; ++i) {
         float transformed[4], projected[4];
@@ -152,7 +157,7 @@ void drawCShape() { //Отрисовка буквы "С"
     }
     glEnd();
 
-    // Соединение задней и передней стенки
+    //Соединение задней и передней стенки
     glBegin(GL_LINES);
     for (int i = 0; i < 8; ++i) {
         float transformed1[4], projected1[4];
@@ -332,13 +337,29 @@ void keyboard(unsigned char key, int x, int y) { //Обработка клавиш
     case '3': mirrorXZ(); break;
     case 'r': resetState(); break;
     case 'm': {
-        resetState();
+        //resetState();
         animationStart[0] = transformMatrix[3][0];
         animationStart[1] = transformMatrix[3][1];
         animationStart[2] = transformMatrix[3][2];
-        animationEnd[0] = 6.0; //Конечная позиция по X
-        animationEnd[1] = 6.0; //Конечная позиция по Y
-        animationEnd[2] = 6.0; //Конечная позиция по Z
+
+        //Вычисление вектора направления
+        float direction[3] = {
+            pointB[0] - pointA[0],
+            pointB[1] - pointA[1],
+            pointB[2] - pointA[2]
+        };
+
+        //Нормализация вектора направления
+        float length = sqrt(direction[0] * direction[0] + direction[1] * direction[1] + direction[2] * direction[2]);
+        direction[0] /= length;
+        direction[1] /= length;
+        direction[2] /= length;
+
+        //Определение конечной позиции на основании дистанции
+        animationEnd[0] = animationStart[0] + direction[0] * moveDistance;
+        animationEnd[1] = animationStart[1] + direction[1] * moveDistance;
+        animationEnd[2] = animationStart[2] + direction[2] * moveDistance;
+
         animationProgress = 0.0;
         step = 1.0 / (frameRate * animationDuration); //Шаг анимации
         isAnimating = true;
@@ -362,6 +383,13 @@ void init() { //Инициализация OpenGL
 int main(int argc, char** argv) {
     SetConsoleCP(1251);
     SetConsoleOutputCP(1251);
+
+    cout << "Введите координаты 1 точки прямой (через пробел, X Y Z): ";
+    cin >> pointA[0] >> pointA[1] >> pointA[2];
+    cout << "Введите координаты 2 точки прямой (через пробел, X Y Z): ";
+    cin >> pointB[0] >> pointB[1] >> pointB[2];
+    cout << "Введите расстояние для перемещения вдоль прямой: ";
+    cin >> moveDistance;
 
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
