@@ -337,7 +337,6 @@ void keyboard(unsigned char key, int x, int y) { //Обработка клавиш
     case '3': mirrorXZ(); break;
     case 'r': resetState(); break;
     case 'm': {
-        //resetState();
         animationStart[0] = transformMatrix[3][0];
         animationStart[1] = transformMatrix[3][1];
         animationStart[2] = transformMatrix[3][2];
